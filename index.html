@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IP & Domain Threat Intel — Toolbox</title>
+  <meta name="description" content="Boîte à outils pour enrichir des IPs et domaines (CTI) : RDAP, DNS, GeoIP, ASN, Shodan, Censys, CT logs, réputation." />
+  <style>
+    :root{
+      /* Light (default) */
+      --bg: #f7f8fc;
+      --bg2:#eef2ff;
+      --card: rgba(255,255,255,.82);
+      --card2: rgba(255,255,255,.65);
+      --border: rgba(15,23,42,.12);
+      --text: rgba(15,23,42,.92);
+      --muted: rgba(15,23,42,.62);
+      --shadow: 0 16px 44px rgba(15,23,42,.12);
+      --radius: 18px;
+
+      --a1:#4f46e5; /* indigo */
+      --a2:#16a34a; /* green */
+      --a3:#0284c7; /* sky */
+      --a4:#ea580c; /* orange */
+      --focus: 0 0 0 4px rgba(79,70,229,.18);
+    }
+
+    /* Optional dark theme (still available if you toggle) */
+    [data-theme="dark"]{
+      --bg:#0b1020;
+      --bg2:#0b1020;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.09);
+      --border: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.88);
+      --muted: rgba(255,255,255,.65);
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --focus: 0 0 0 4px rgba(56,189,248,.20);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(900px 500px at 12% 12%, rgba(79,70,229,.18), transparent 60%),
+        radial-gradient(700px 450px at 92% 18%, rgba(2,132,199,.14), transparent 60%),
+        radial-gradient(800px 520px at 30% 95%, rgba(22,163,74,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      color: var(--text);
+    }
+
+    a{ color: inherit; text-decoration:none; }
+    .container{ width:min(1120px, 92vw); margin-inline:auto; padding: 28px 0 42px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding: 14px 16px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border-radius: calc(var(--radius) + 8px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand{ display:flex; align-items:center; gap:12px; min-width: 220px; }
+    .logo{
+      width:44px; height:44px; border-radius: 16px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(255,255,255,.25) 55%, transparent 70%),
+        linear-gradient(135deg, rgba(79,70,229,.95), rgba(2,132,199,.85));
+      border: 1px solid rgba(255,255,255,.45);
+      box-shadow: 0 14px 30px rgba(79,70,229,.18);
+    }
+    [data-theme="dark"] .logo{
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 10px 26px rgba(124,58,237,.22);
+    }
+
+    .brand h1{ font-size: 14px; margin:0; letter-spacing:.2px; }
+    .brand p{ margin:2px 0 0; font-size: 12px; color: var(--muted); }
+
+    .actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.65);
+      backdrop-filter: blur(10px);
+    }
+    [data-theme="dark"] .pill{ background: rgba(255,255,255,.06); }
+
+    .search{ display:flex; align-items:center; gap:10px; width: min(520px, 68vw); }
+    .search input{
+      width:100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.92);
+      color: var(--text);
+      outline: none;
+      transition: box-shadow .15s ease, border-color .15s ease;
+    }
+    [data-theme="dark"] .search input{ background: rgba(0,0,0,.12); }
+    .search input::placeholder{ color: var(--muted); }
+    .search input:focus{ box-shadow: var(--focus); border-color: rgba(79,70,229,.35); }
+
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.72);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display:inline-flex; align-items:center; gap:8px;
+      transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+      user-select:none;
+    }
+    [data-theme="dark"] .btn{ background: rgba(255,255,255,.09); }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.88); }
+    [data-theme="dark"] .btn:hover{ background: rgba(255,255,255,.06); }
+    .btn:active{ transform: translateY(0px); }
+    .btn:focus-visible{ outline:none; box-shadow: var(--focus); }
+
+    .kbd{
+      font-size: 11px; color: var(--muted);
+      border:1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+    }
+    [data-theme="dark"] .kbd{ background: rgba(0,0,0,.10); }
+
+    .hero{
+      margin-top: 18px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+      align-items:stretch;
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--card), rgba(255,255,255,.55));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      padding: 16px;
+    }
+    [data-theme="dark"] .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero h2{ margin:0 0 8px; font-size: 18px; }
+    .hero p{ margin:0; color: var(--muted); line-height:1.45; }
+
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .stat{
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.75);
+      border:1px solid var(--border);
+    }
+    [data-theme="dark"] .stat{ background: rgba(255,255,255,.04); }
+    .stat .n{ font-size: 18px; font-weight: 800; }
+    .stat .l{ font-size: 12px; color: var(--muted); margin-top:2px; }
+
+    .legend{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.72);
+      cursor:pointer;
+      transition: transform .08s ease, background .15s ease;
+      user-select:none;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    [data-theme="dark"] .chip{ background: rgba(255,255,255,.04); }
+    .chip:hover{ transform: translateY(-1px); background: rgba(255,255,255,.9); }
+    [data-theme="dark"] .chip:hover{ background: rgba(255,255,255,.06); }
+    .chip[aria-pressed="true"]{
+      color: var(--text);
+      background: rgba(79,70,229,.14);
+      border-color: rgba(79,70,229,.28);
+    }
+
+    .dot{ width:10px; height:10px; border-radius: 99px; }
+    .dot.d1{ background: var(--a1); }
+    .dot.d2{ background: var(--a2); }
+    .dot.d3{ background: var(--a3); }
+    .dot.d4{ background: var(--a4); }
+
+    .grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 980px){
+      .hero{ grid-template-columns: 1fr; }
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+      .brand{ min-width: unset; }
+    }
+    @media (max-width: 640px){
+      .grid{ grid-template-columns: 1fr; }
+      .search{ width: 100%; }
+      .topbar{ flex-direction: column; align-items:stretch; }
+      .actions{ justify-content:space-between; }
+      .stats{ grid-template-columns: 1fr; }
+    }
+
+    .tool{ position:relative; overflow:hidden; }
+    .tool:hover .tool-title{ text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+    .tool .badge{
+      position:absolute; top:12px; right:12px;
+      font-size: 11px; padding: 6px 8px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.82);
+      color: var(--muted);
+      backdrop-filter: blur(10px);
+    }
+    [data-theme="dark"] .tool .badge{ background: rgba(0,0,0,.10); }
+
+    .tool-title{
+      display:flex; align-items:center; gap:10px;
+      font-size: 15px; font-weight: 800;
+      margin:0 0 6px;
+    }
+    .icon{
+      width:36px; height:36px; border-radius: 14px;
+      border:1px solid var(--border);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.8), rgba(255,255,255,.3) 55%, transparent 70%),
+        rgba(255,255,255,.55);
+      display:grid; place-items:center;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    [data-theme="dark"] .icon{
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 55%),
+        rgba(255,255,255,.05);
+    }
+
+    .tool-desc{ margin:0; color: var(--muted); line-height:1.45; font-size: 13px; }
+    .tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top: 10px; }
+    .tag{
+      font-size: 11px; color: var(--muted);
+      border:1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.7);
+    }
+    [data-theme="dark"] .tag{ background: rgba(255,255,255,.03); }
+
+    .footer{
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      opacity:.95;
+    }
+
+    .footerbar{
+      margin-top: 16px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.55));
+      border-radius: calc(var(--radius) + 6px);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    [data-theme="dark"] .footerbar{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+    }
+    .sig{
+      display:flex; align-items:center; gap:10px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .sig .mini{
+      width:28px;height:28px;border-radius: 10px;
+      border:1px solid var(--border);
+      background: linear-gradient(135deg, rgba(79,70,229,.9), rgba(2,132,199,.75));
+    }
+    .smalllink{
+      color: var(--muted);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .empty{
+      margin-top: 14px;
+      text-align:center;
+      color: var(--muted);
+      padding: 18px;
+      border-radius: var(--radius);
+      border: 1px dashed var(--border);
+      background: rgba(255,255,255,.65);
+      display:none;
+    }
+    [data-theme="dark"] .empty{ background: rgba(255,255,255,.03); }
+  </style>
+</head>
+
+<body>
+  <div class="container" id="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>IP & Domain Threat Intel — Toolbox</h1>
+          <p>Recherche + catégories (RDAP • DNS • GeoIP • ASN • Exposure • Certs • Reputation)</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="pill search" role="search">
+          <span aria-hidden="true">🔎</span>
+          <input id="q" type="search" placeholder="Rechercher un outil (ex: shodan, rdap, geoip, reputation…)" autocomplete="off" />
+          <span class="kbd" title="Raccourci clavier">/</span>
+        </div>
+
+        <button class="btn" id="clear" type="button" title="Réinitialiser filtres">♻️ Reset</button>
+        <button class="btn" id="theme" type="button" title="Basculer thème">🌗 Thème</button>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="card">
+        
+
+        <div class="stats" aria-label="Résumé">
+          <div class="stat">
+            <div class="n" id="countAll">—</div>
+            <div class="l">Outils au total</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="countShown">—</div>
+            <div class="l">Affichés</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="activeCat">Tous</div>
+            <div class="l">Catégorie</div>
+          </div>
+        </div>
+
+        <div class="legend" id="chips" aria-label="Catégories"></div>
+      </div>
+
+      <div class="card">
+        <h2>Workflow rapide</h2>
+        <p style="margin-top:6px">
+          1) DNS/WHOIS/RDAP → 2) GeoIP & ASN → 3) Services exposés → 4) Certificats (CT logs) → 5) Réputation & pivots.
+        </p>
+        <div class="legend" style="margin-top:12px">
+          <span class="tag">Conseil: utilise 2 sources GeoIP</span>
+          <span class="tag">Pivot: ASN & certs</span>
+          <span class="tag">Contexte: passive DNS</span>
+        </div>
+        <div class="footer" style="margin-top:14px">
+          <span>Raccourci: appuie sur <b>/</b> pour focus la recherche.</span>
+          <span id="hint"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty" id="empty">Aucun résultat. Essaie une autre recherche ou clique “Reset”.</div>
+    <div class="grid" id="grid" aria-label="Liste des outils"></div>
+
+    <div class="footerbar" role="contentinfo">
+      <div class="sig">
+        <span class="mini" aria-hidden="true"></span>
+        <span>AYOUB ELMORTAJI</span>
+      </div>
+      <div>
+        <span style="color:var(--muted)">Toolbox — IP & Domain Threat Intel</span>
+        <span style="margin:0 8px;color:var(--muted)">•</span>
+       
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tools = [
+      { name:"RDAP Client (client.rdap.org)", url:"https://client.rdap.org/", category:"DNS / WHOIS / RDAP",
+        desc:"Interroger RDAP pour obtenir les infos d’enregistrement (RIR, entités, dates, rôles…).",
+        tags:["rdap","whois","rir","registration"], icon:"R" },
+      { name:"RDAP.org", url:"https://rdap.org/", category:"DNS / WHOIS / RDAP",
+        desc:"Portail RDAP pour récupérer des données d’enregistrement d’IP/domaines.",
+        tags:["rdap","whois","lookup"], icon:"R" },
+      { name:"NSLookup.io", url:"https://www.nslookup.io/", category:"DNS / WHOIS / RDAP",
+        desc:"Lookup DNS (A/AAAA/NS/MX/TXT/SOA) avec affichage clair.",
+        tags:["dns","a record","mx","soa","txt"], icon:"N" },
+
+      { name:"IPinfo", url:"https://ipinfo.io/", category:"GeoIP & ASN",
+        desc:"Enrichissement IP (géoloc, ASN, org, ranges).",
+        tags:["geoip","asn","enrichment"], icon:"I" },
+      { name:"IPLocation.net", url:"https://www.iplocation.net/", category:"GeoIP & ASN",
+        desc:"Comparer plusieurs sources de géolocalisation IP.",
+        tags:["geoip","compare"], icon:"G" },
+      { name:"BGPView", url:"https://bgpview.io/", category:"GeoIP & ASN",
+        desc:"Contexte ASN/BGP (préfixes, peers, upstreams, org).",
+        tags:["asn","bgp","prefix"], icon:"B" },
+
+      { name:"Shodan", url:"https://www.shodan.io/", category:"Service Exposure",
+        desc:"Découvrir services/ports exposés, bannières, technos, historiques.",
+        tags:["ports","banners","exposure"], icon:"S" },
+      { name:"Censys Search", url:"https://search.censys.io/", category:"Service Exposure",
+        desc:"Recherche d’assets Internet + métadonnées TLS/certificats/ports.",
+        tags:["tls","ports","exposure"], icon:"C" },
+
+      { name:"crt.sh", url:"https://crt.sh/", category:"Certificats & CT Logs",
+        desc:"Explorer les Certificate Transparency logs (domaines liés, SAN, issuer).",
+        tags:["cert","ct logs","tls","pivot"], icon:"🔒" },
+
+      { name:"VirusTotal", url:"https://www.virustotal.com/", category:"Réputation & Threat Intel",
+        desc:"Réputation + relations (domains, IPs, URLs, fichiers) et historique.",
+        tags:["reputation","intel","relationships"], icon:"V" },
+      { name:"ThreatFox", url:"https://threatfox.abuse.ch/", category:"Réputation & Threat Intel",
+        desc:"IOC database (malware infra) pour pivoter sur IPs/domaines/URLs.",
+        tags:["ioc","malware","infra"], icon:"T" },
+      { name:"OSINT Tricks", url:"https://osint.industries/", category:"Réputation & Threat Intel",
+        desc:"Recherche OSINT (selon modules) utile pour pivots CTI.",
+        tags:["osint","pivot"], icon:"O" },
+      { name:"Cisco Talos Intelligence", url:"https://talosintelligence.com/", category:"Réputation & Threat Intel",
+        desc:"Réputation web/email/IP, scores et contexte sécurité.",
+        tags:["reputation","talos","email"], icon:"🛡️" },
+      { name:"IP2Proxy", url:"https://www.ip2proxy.com/", category:"Réputation & Threat Intel",
+        desc:"Détecter si une IP est associée à proxy/VPN/Tor (selon dataset).",
+        tags:["vpn","proxy","tor"], icon:"P" }
+    ];
+
+    const categories = [
+      { key:"Tous", dot:"d3" },
+      { key:"DNS / WHOIS / RDAP", dot:"d1" },
+      { key:"GeoIP & ASN", dot:"d2" },
+      { key:"Service Exposure", dot:"d3" },
+      { key:"Certificats & CT Logs", dot:"d4" },
+      { key:"Réputation & Threat Intel", dot:"d1" }
+    ];
+
+    const $ = (s) => document.querySelector(s);
+    const grid = $("#grid"), q = $("#q"), empty = $("#empty");
+    const countAll = $("#countAll"), countShown = $("#countShown"), activeCat = $("#activeCat"), hint = $("#hint");
+
+    let state = {
+      query: "",
+      category: "Tous",
+      theme: localStorage.getItem("toolbox_theme") || "light"
+    };
+
+    function setTheme(theme){
+      document.documentElement.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+      state.theme = theme;
+      localStorage.setItem("toolbox_theme", theme);
+      hint.textContent = theme === "dark" ? "Mode sombre activé" : "Mode clair activé";
+      setTimeout(()=> hint.textContent = "", 1400);
+    }
+
+    function createChips(){
+      const wrap = $("#chips");
+      wrap.innerHTML = "";
+      categories.forEach(c => {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.type = "button";
+        chip.setAttribute("aria-pressed", String(state.category === c.key));
+        chip.innerHTML = `<span class="dot ${c.dot}"></span><span>${c.key}</span>`;
+        chip.addEventListener("click", () => { state.category = c.key; render(); });
+        wrap.appendChild(chip);
+      });
+    }
+
+    function toolCard(t){
+      const el = document.createElement("a");
+      el.className = "card tool";
+      el.href = t.url; el.target = "_blank"; el.rel = "noopener noreferrer";
+      el.innerHTML = `
+        <div class="badge">${t.category}</div>
+        <div class="tool-title"><div class="icon" aria-hidden="true">${t.icon}</div><span>${t.name}</span></div>
+        <p class="tool-desc">${t.desc}</p>
+        <div class="tags">${t.tags.slice(0,5).map(x => `<span class="tag">${x}</span>`).join("")}</div>
+      `;
+      return el;
+    }
+
+    function matchTool(t){
+      const qv = state.query.trim().toLowerCase();
+      const catOk = (state.category === "Tous") || (t.category === state.category);
+      if(!catOk) return false;
+      if(!qv) return true;
+      const hay = [t.name, t.category, t.desc, ...(t.tags||[])].join(" ").toLowerCase();
+      return hay.includes(qv);
+    }
+
+    function render(){
+      document.querySelectorAll(".chip").forEach(ch => {
+        const label = ch.textContent.trim();
+        ch.setAttribute("aria-pressed", String(label === state.category));
+      });
+
+      const filtered = tools.filter(matchTool);
+      grid.innerHTML = "";
+      filtered.forEach(t => grid.appendChild(toolCard(t)));
+
+      countAll.textContent = tools.length;
+      countShown.textContent = filtered.length;
+      activeCat.textContent = state.category;
+
+      empty.style.display = filtered.length ? "none" : "block";
+    }
+
+    q.addEventListener("input", (e) => { state.query = e.target.value; render(); });
+    $("#clear").addEventListener("click", () => {
+      state.query = ""; state.category = "Tous"; q.value = ""; render(); q.focus();
+    });
+    $("#theme").addEventListener("click", () => { setTheme(state.theme === "dark" ? "light" : "dark"); });
+
+    window.addEventListener("keydown", (e) => {
+      if(e.key === "/" && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+      if(e.key === "Escape"){ q.blur(); }
+    });
+
+    setTheme(state.theme);
+    createChips();
+    render();
+  </script>
+</body>
+</html>
